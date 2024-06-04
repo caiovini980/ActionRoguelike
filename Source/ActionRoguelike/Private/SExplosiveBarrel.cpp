@@ -3,14 +3,27 @@
 #include "Components/StaticMeshComponent.h"
 #include "SExplosiveBarrel.h"
 
+#include "SMagicProjectile.h"
+#include "PhysicsEngine/RadialForceComponent.h"
+
 // Sets default values
 ASExplosiveBarrel::ASExplosiveBarrel()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 
 	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>("StaticMesh");
+	StaticMesh->SetSimulatePhysics(true);
 	RootComponent = StaticMesh;
+
+	ForceComp = CreateDefaultSubobject<URadialForceComponent>("ForceComp");
+	ForceComp->SetupAttachment(StaticMesh);
+
+	ForceComp->SetAutoActivate(false);
+
+	ForceComp->Radius = 750.0f;
+	ForceComp->ImpulseStrength = 2500.0f;
+	ForceComp->bImpulseVelChange = true;
 }
 
 // Called when the game starts or when spawned
@@ -20,30 +33,11 @@ void ASExplosiveBarrel::BeginPlay()
 	
 }
 
-void ASExplosiveBarrel::Explode()
+void ASExplosiveBarrel::PostInitializeComponents()
 {
-	TArray<FHitResult> OutHits;
-	FCollisionShape CollisionSphere = FCollisionShape::MakeSphere(400.0f);
-	FVector OriginLocation = GetActorLocation();
-	DrawDebugSphere(GetWorld(), OriginLocation, CollisionSphere.GetSphereRadius(), 30, FColor::Cyan,
-		true);
+	Super::PostInitializeComponents();
 
-	bool IsHit = GetWorld()->SweepMultiByChannel(OutHits, OriginLocation, OriginLocation,FQuat::Identity,
-		ECC_WorldDynamic, CollisionSphere);
-	
-	if (IsHit)
-	{
-		for (auto& Hit : OutHits)
-		{
-			if (UStaticMeshComponent* MeshComp = Hit.GetActor()->GetComponentByClass<UStaticMeshComponent>())
-			{
-				if (!MeshComp->IsSimulatingPhysics()) { return; }
-
-				UE_LOG(LogTemp, Warning, TEXT("BOOOM"))
-				MeshComp->AddRadialImpulse(OriginLocation, 400.0f, 2000.0f, RIF_Constant, true);
-			}
-		}
-	}
+	StaticMesh->OnComponentHit.AddDynamic(this, &ASExplosiveBarrel::OnActorHit);
 }
 
 // Called every frame
@@ -51,5 +45,14 @@ void ASExplosiveBarrel::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+}
+
+void ASExplosiveBarrel::OnActorHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+	if (Cast<ASMagicProjectile>(OtherActor))
+	{
+		ForceComp->FireImpulse();
+	}
 }
 

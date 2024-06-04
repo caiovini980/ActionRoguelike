@@ -71,7 +71,6 @@ void ASCharacter::PrimaryInteract()
 	}
 }
 
-
 void ASCharacter::PrimaryAttack()
 {
 	PlayAnimMontage(AttackAnim);
@@ -85,6 +84,7 @@ void ASCharacter::PrimaryAttack_TimeLapsed()
 	
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	SpawnParams.Instigator = this;
 	
 	GetWorld()->SpawnActor<AActor>(ProjectileClass, SpawmTM, SpawnParams);
 }

@@ -58,7 +58,7 @@ void USInteractionComponent::PrimaryInteract()
 	bool bBlockingHit = GetWorld()->SweepMultiByObjectType(Hits, EyeLocation, End, FQuat::Identity, ObjectQueryParams, Shape);
 	FColor LineColor = bBlockingHit ? FColor::Green : FColor::Red;
 	
-	for (FHitResult Hit : Hits)
+	for (FHitResult& Hit : Hits)
 	{
 		if (AActor* HitActor = Hit.GetActor())
 		{

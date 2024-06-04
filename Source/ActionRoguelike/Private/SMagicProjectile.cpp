@@ -25,8 +25,6 @@ ASMagicProjectile::ASMagicProjectile()
 	
 	EffectComp = CreateDefaultSubobject<UParticleSystemComponent>("EffectComp");
 	EffectComp->SetupAttachment(SphereComp);
-	
-	SphereComp->OnComponentHit.AddDynamic(this, &ASMagicProjectile::OnHit);
 }
 
 // Called when the game starts or when spawned
@@ -36,22 +34,25 @@ void ASMagicProjectile::BeginPlay()
 	
 }
 
+void ASMagicProjectile::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	if (APawn* ProjectileInstigator = GetInstigator())
+	{
+		SphereComp->IgnoreActorWhenMoving(ProjectileInstigator, true);
+		ProjectileInstigator->MoveIgnoreActorAdd(this);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Projectile %s does not have an Instigator."), *GetNameSafe(this));
+	}
+}
+
 // Called every frame
 void ASMagicProjectile::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-}
-
-void ASMagicProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
-							  FVector NormalImpulse, const FHitResult& Hit)
-{
-	if (ASExplosiveBarrel* ExplosiveBarrel = Cast<ASExplosiveBarrel>(OtherActor))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Magic projectile hitted explosive barrel!"))
-		ExplosiveBarrel->Explode();
-	}
-
-	Destroy();
 }
 
