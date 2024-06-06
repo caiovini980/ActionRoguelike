@@ -62,7 +62,7 @@ void USInteractionComponent::PrimaryInteract()
 	{
 		if (AActor* HitActor = Hit.GetActor())
 		{
-			DrawDebugSphere(GetWorld(), Hit.ImpactPoint, Radius, 20, LineColor, false, 2.0f);
+			// DrawDebugSphere(GetWorld(), Hit.ImpactPoint, Radius, 20, LineColor, false, 2.0f);
 			if(HitActor->Implements<USGameplayInterface>())
 			{
 				APawn* CastedPawn = Cast<APawn>(Owner);

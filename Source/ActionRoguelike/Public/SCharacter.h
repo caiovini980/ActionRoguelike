@@ -23,9 +23,15 @@ protected:
 	TSubclassOf<AActor> ProjectileClass;
 
 	UPROPERTY(EditAnywhere, Category="Attack")
+	TSubclassOf<AActor> BlackholeClass;
+
+	UPROPERTY(EditAnywhere, Category="Attack")
 	UAnimMontage* AttackAnim;
 	
 	FTimerHandle TimerHandle_PrimaryAttack;
+	FTimerHandle TimerHandle_BlackholeAttack;
+
+	float TimeToAttack = 0.2f;
 
 public:
 	// Sets default values for this character's properties
@@ -40,7 +46,7 @@ protected:
 
 	UPROPERTY(VisibleAnywhere)
 	USInteractionComponent* InteractionComp;
-	
+
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	
@@ -50,6 +56,8 @@ protected:
 	void PrimaryInteract();
 	
 	void PrimaryAttack();
+	void BlackholeAttack();
+	void BlackholeAttack_Timelapsed();
 	void PrimaryAttack_TimeLapsed();
 
 public:	

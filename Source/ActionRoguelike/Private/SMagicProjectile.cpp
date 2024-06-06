@@ -3,7 +3,6 @@
 
 #include "SMagicProjectile.h"
 
-#include "SExplosiveBarrel.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Particles/ParticleSystemComponent.h"
