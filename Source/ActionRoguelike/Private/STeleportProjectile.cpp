@@ -1,22 +1,20 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "SMagicProjectile.h"
+#include "STeleportProjectile.h"
 
-#include "SAttributeComponent.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Particles/ParticleSystemComponent.h"
 
 // Sets default values
-ASMagicProjectile::ASMagicProjectile()
+ASTeleportProjectile::ASTeleportProjectile()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 	SphereComp = CreateDefaultSubobject<USphereComponent>("SphereComp");
 	SphereComp->SetCollisionProfileName("Projectile");
-	SphereComp->OnComponentBeginOverlap.AddDynamic(this, &ASMagicProjectile::OnActorOverlap);
 	RootComponent = SphereComp;
 	
 	MovementComp = CreateDefaultSubobject<UProjectileMovementComponent>("MovementComp");
@@ -24,18 +22,17 @@ ASMagicProjectile::ASMagicProjectile()
 	MovementComp->bRotationFollowsVelocity = true;
 	MovementComp->bInitialVelocityInLocalSpace = true;
 	
-	EffectComp = CreateDefaultSubobject<UParticleSystemComponent>("EffectComp");
-	EffectComp->SetupAttachment(SphereComp);
+	ParticleComp = CreateDefaultSubobject<UParticleSystemComponent>("EffectComp");
+	ParticleComp->SetupAttachment(SphereComp);
 }
 
 // Called when the game starts or when spawned
-void ASMagicProjectile::BeginPlay()
+void ASTeleportProjectile::BeginPlay()
 {
 	Super::BeginPlay();
-	
 }
 
-void ASMagicProjectile::PostInitializeComponents()
+void ASTeleportProjectile::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 
@@ -48,25 +45,38 @@ void ASMagicProjectile::PostInitializeComponents()
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Projectile %s does not have an Instigator."), *GetNameSafe(this));
 	}
+	
+	GetWorldTimerManager().SetTimer(TeleportProjectileTravelTimer, this, &ASTeleportProjectile::EndTeleportTravel, 1.f);
 }
 
-void ASMagicProjectile::OnActorOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void ASTeleportProjectile::EndTeleportTravel()
 {
-	if (OtherActor == nullptr) return;
+	OnTeleportProjectileFinishTravel();
+	GetWorldTimerManager().SetTimer(TeleportPlayerTimer, this, &ASTeleportProjectile::TeleportInstigator, 0.5f);
+}
 
-	if (USAttributeComponent* AttributeComp = Cast<USAttributeComponent>(OtherActor->GetComponentByClass(USAttributeComponent::StaticClass())))
+void ASTeleportProjectile::TeleportInstigator()
+{
+	if (APawn* ProjectileInstigator = GetInstigator())
 	{
-		AttributeComp->ApplyHealthChange(-20.0f);
-		Destroy();
+		ProjectileInstigator->TeleportTo(GetActorLocation(), GetActorRotation());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Projectile %s does not have an Instigator. Cant teleport"), *GetNameSafe(this));
 	}
 	
+	Destroy();
 }
 
 // Called every frame
-void ASMagicProjectile::Tick(float DeltaTime)
+void ASTeleportProjectile::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
 }
+
+// EVENTS
+void ASTeleportProjectile::OnTeleportProjectileFinishTravel_Implementation()
+{}
 

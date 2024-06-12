@@ -4,41 +4,46 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "SMagicProjectile.generated.h"
+#include "STeleportProjectile.generated.h"
 
 class USphereComponent;
-class UProjectileMovementComponent;
 class UParticleSystemComponent;
+class UProjectileMovementComponent;
 
 UCLASS()
-class ACTIONROGUELIKE_API ASMagicProjectile : public AActor
+class ACTIONROGUELIKE_API ASTeleportProjectile : public AActor
 {
 	GENERATED_BODY()
 	
-public:
-	
+public:	
 	// Sets default values for this actor's properties
-	ASMagicProjectile();
+	ASTeleportProjectile();
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	USphereComponent* SphereComp;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	UProjectileMovementComponent* MovementComp;
+	UParticleSystemComponent* ParticleComp;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	UParticleSystemComponent* EffectComp;
+	UProjectileMovementComponent* MovementComp;
+
+	FTimerHandle TeleportProjectileTravelTimer;
+	FTimerHandle TeleportPlayerTimer;
+
+	void TeleportInstigator();
+	void EndTeleportTravel();
 	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 	virtual void PostInitializeComponents() override;
 
-	UFUNCTION()
-	void OnActorOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+
+	UFUNCTION(BlueprintNativeEvent)
+	void OnTeleportProjectileFinishTravel();
 };

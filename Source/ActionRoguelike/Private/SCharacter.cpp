@@ -3,8 +3,11 @@
 
 #include "SCharacter.h"
 
+#include "SAttributeComponent.h"
 #include "SInteractionComponent.h"
+#include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/SpringArmComponent.h"
 
 // Sets default values
 ASCharacter::ASCharacter()
@@ -20,6 +23,7 @@ ASCharacter::ASCharacter()
 	CameraComp->SetupAttachment(SpringArmComp);
 
 	InteractionComp = CreateDefaultSubobject<USInteractionComponent>("InteractionComp");
+	AttributeComp = CreateDefaultSubobject<USAttributeComponent>("AttributeComp");
 
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 
@@ -70,13 +74,7 @@ void ASCharacter::PrimaryInteract()
 	}
 }
 
-void ASCharacter::BlackholeAttack()
-{
-	PlayAnimMontage(AttackAnim);
-	GetWorldTimerManager().SetTimer(TimerHandle_BlackholeAttack, this, &ASCharacter::BlackholeAttack_Timelapsed, TimeToAttack);
-}
-
-void ASCharacter::BlackholeAttack_Timelapsed()
+void ASCharacter::ClassToSpawn(TSubclassOf<AActor>& ActorClass)
 {
 	const float Distance = 10000.f;
 	FVector SpawnLocation = GetMesh()->GetSocketLocation("Muzzle_01");
@@ -99,7 +97,36 @@ void ASCharacter::BlackholeAttack_Timelapsed()
 	DrawDebugLine(GetWorld(), SpawnLocation, SpawnFinalLocation, LineColor, false, 2.0f, 0, 2.0f);
 	
 	FTransform SpawmTM = FTransform((SpawnFinalLocation - SpawnLocation).Rotation(), SpawnLocation);
-	GetWorld()->SpawnActor<AActor>(BlackholeClass, SpawmTM, SpawnParams);
+	GetWorld()->SpawnActor<AActor>(ActorClass, SpawmTM, SpawnParams);
+}
+
+
+void ASCharacter::CastTeleport()
+{
+	PlayAnimMontage(AttackAnim);
+	GetWorldTimerManager().SetTimer(TimerHandle_CastTeleport, this, &ASCharacter::CastTeleport_Timelapsed, TimeToAttack);
+}
+
+void ASCharacter::CastTeleport_Timelapsed()
+{
+	if(ensure(TeleportClass))
+	{
+		ClassToSpawn(TeleportClass);
+	}
+}
+
+void ASCharacter::BlackholeAttack()
+{
+	PlayAnimMontage(AttackAnim);
+	GetWorldTimerManager().SetTimer(TimerHandle_BlackholeAttack, this, &ASCharacter::BlackholeAttack_Timelapsed, TimeToAttack);
+}
+
+void ASCharacter::BlackholeAttack_Timelapsed()
+{
+	if (ensure(BlackholeClass))
+	{
+		ClassToSpawn(BlackholeClass);
+	}
 }
 
 void ASCharacter::PrimaryAttack()
@@ -110,29 +137,12 @@ void ASCharacter::PrimaryAttack()
 
 void ASCharacter::PrimaryAttack_TimeLapsed()
 {
-	const float Distance = 10000.f;
-	FVector SpawnLocation = GetMesh()->GetSocketLocation("Muzzle_01");
-	FVector FinalLocation = CameraComp->GetComponentLocation() + (CameraComp->GetForwardVector() * Distance);
-	
-	FCollisionObjectQueryParams ObjectQueryParams;
-	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
-	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
-	
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	SpawnParams.Instigator = this;
-
-	FHitResult Hit;
-	bool bBlockingHit = GetWorld()->LineTraceSingleByObjectType(Hit, CameraComp->GetComponentLocation(), FinalLocation, ObjectQueryParams);
-	
-	FVector SpawnFinalLocation = bBlockingHit ? Hit.Location : FinalLocation;
-
-	FColor LineColor = bBlockingHit ? FColor::Green : FColor::Red;
-	DrawDebugLine(GetWorld(), SpawnLocation, SpawnFinalLocation, LineColor, false, 2.0f, 0, 2.0f);
-	
-	FTransform SpawmTM = FTransform((SpawnFinalLocation - SpawnLocation).Rotation(), SpawnLocation);
-	GetWorld()->SpawnActor<AActor>(ProjectileClass, SpawmTM, SpawnParams);
+	if (ensure(ProjectileClass))
+	{
+		ClassToSpawn(ProjectileClass);
+	}
 }
+
 
 // Called to bind functionality to input
 void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -148,6 +158,7 @@ void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction("PrimaryAttack", IE_Pressed, this, &ASCharacter::PrimaryAttack);
 	PlayerInputComponent->BindAction("BlackholeAttack", IE_Pressed, this, &ASCharacter::BlackholeAttack);
+	PlayerInputComponent->BindAction("CastTeleport", IE_Pressed, this, &ASCharacter::CastTeleport);
 	PlayerInputComponent->BindAction("PrimaryInteract", IE_Pressed, this, &ASCharacter::PrimaryInteract);
 	
 }

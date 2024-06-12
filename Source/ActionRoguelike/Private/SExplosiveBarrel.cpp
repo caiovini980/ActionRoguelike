@@ -1,7 +1,9 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "Components/StaticMeshComponent.h"
 #include "SExplosiveBarrel.h"
+
+#include "SAttributeComponent.h"
+#include "Components/StaticMeshComponent.h"
 
 #include "SMagicProjectile.h"
 #include "PhysicsEngine/RadialForceComponent.h"
@@ -52,7 +54,47 @@ void ASExplosiveBarrel::OnActorHit(UPrimitiveComponent* HitComponent, AActor* Ot
 {
 	if (Cast<ASMagicProjectile>(OtherActor))
 	{
+		ApplyDamageInArea();
 		ForceComp->FireImpulse();
 	}
+}
+
+void ASExplosiveBarrel::ApplyDamageInArea() const
+{
+	FCollisionObjectQueryParams ObjectQueryParams;
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn);
+
+	FVector ActorLocation = GetActorLocation();
+	
+	TArray<FHitResult> Hits;
+	TArray<AActor*> AffectedActors;
+	
+	FCollisionShape Shape;
+	Shape.SetSphere(ForceComp->Radius);
+
+	bool bBlockingHit = GetWorld()->SweepMultiByObjectType(Hits, ActorLocation, ActorLocation, FQuat::Identity, ObjectQueryParams, Shape);
+	FColor LineColor = bBlockingHit ? FColor::Green : FColor::Red;
+
+	if (Hits.Num() <= 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No Actor was affected by the explosion!"))
+		return;
+	}
+	
+	for (FHitResult& Hit : Hits)
+	{
+		if (USAttributeComponent* AttributeComp = Hit.GetActor()->GetComponentByClass<USAttributeComponent>())
+		{
+			if (AActor** CachedActor = AffectedActors.FindByKey(Hit.GetActor()))
+			{
+				continue;
+			}
+			
+			AttributeComp->ApplyHealthChange(-30.0f);
+			AffectedActors.Push(Hit.GetActor());
+		}
+	}
+
+	DrawDebugSphere(GetWorld(), ActorLocation, ForceComp->Radius, 15, LineColor);
 }
 
