@@ -56,6 +56,7 @@ protected:
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	virtual void PostInitializeComponents() override;
 	
 	void MoveForward(float Value);
 	void MoveRight(float Value);
@@ -70,6 +71,9 @@ protected:
 	void CastTeleport_Timelapsed();
 
 	void ClassToSpawn(TSubclassOf<AActor>& ActorClass);
+	
+	UFUNCTION()
+	void OnHealthChanged(AActor* IntigatorActor, USAttributeComponent* OwningComp, float NewHealth, float Delta);
 
 public:	
 	// Called every frame

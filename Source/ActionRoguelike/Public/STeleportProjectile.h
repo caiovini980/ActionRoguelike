@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "SProjectileBase.h"
 #include "GameFramework/Actor.h"
 #include "STeleportProjectile.generated.h"
 
@@ -11,7 +12,7 @@ class UParticleSystemComponent;
 class UProjectileMovementComponent;
 
 UCLASS()
-class ACTIONROGUELIKE_API ASTeleportProjectile : public AActor
+class ACTIONROGUELIKE_API ASTeleportProjectile : public ASProjectileBase
 {
 	GENERATED_BODY()
 	
@@ -20,30 +21,19 @@ public:
 	ASTeleportProjectile();
 
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	USphereComponent* SphereComp;
+	UPROPERTY(EditDefaultsOnly, Category="Teleport")
+	float TeleportDelay;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	UParticleSystemComponent* ParticleComp;
+	UPROPERTY(EditDefaultsOnly, Category="Teleport")
+	float DetonateDelay;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	UProjectileMovementComponent* MovementComp;
+	// handle cancel timer if we already hit something
+	FTimerHandle TimerHandle_DelayedDetonate;
 
-	FTimerHandle TeleportProjectileTravelTimer;
-	FTimerHandle TeleportPlayerTimer;
-
-	void TeleportInstigator();
-	void EndTeleportTravel();
+	void TeleportInstigator() const;
+	
+	virtual void Explode_Implementation() override;
 	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
-	virtual void PostInitializeComponents() override;
-
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
-	UFUNCTION(BlueprintNativeEvent)
-	void OnTeleportProjectileFinishTravel();
 };

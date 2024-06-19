@@ -24,6 +24,9 @@ protected:
 
 	UPROPERTY(EditAnywhere)
 	URadialForceComponent* ForceComp;
+
+	UPROPERTY(EditAnywhere)
+	float Damage = 100.0f;
 	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

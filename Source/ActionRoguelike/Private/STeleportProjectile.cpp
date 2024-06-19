@@ -5,6 +5,7 @@
 
 #include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystemComponent.h"
 
 // Sets default values
@@ -13,70 +14,44 @@ ASTeleportProjectile::ASTeleportProjectile()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	SphereComp = CreateDefaultSubobject<USphereComponent>("SphereComp");
-	SphereComp->SetCollisionProfileName("Projectile");
-	RootComponent = SphereComp;
-	
-	MovementComp = CreateDefaultSubobject<UProjectileMovementComponent>("MovementComp");
-	MovementComp->InitialSpeed = 1000.0f;
-	MovementComp->bRotationFollowsVelocity = true;
-	MovementComp->bInitialVelocityInLocalSpace = true;
-	
-	ParticleComp = CreateDefaultSubobject<UParticleSystemComponent>("EffectComp");
-	ParticleComp->SetupAttachment(SphereComp);
+	TeleportDelay = 0.2f;
+	DetonateDelay = 0.2f;
+
+	MovementComp->InitialSpeed = 6000.0f;
 }
 
 // Called when the game starts or when spawned
 void ASTeleportProjectile::BeginPlay()
 {
 	Super::BeginPlay();
+
+	GetWorldTimerManager().SetTimer(TimerHandle_DelayedDetonate, this, &ASTeleportProjectile::Explode, DetonateDelay);
 }
 
-void ASTeleportProjectile::PostInitializeComponents()
+void ASTeleportProjectile::Explode_Implementation()
 {
-	Super::PostInitializeComponents();
+	GetWorldTimerManager().ClearTimer(TimerHandle_DelayedDetonate);
 
-	if (APawn* ProjectileInstigator = GetInstigator())
-	{
-		SphereComp->IgnoreActorWhenMoving(ProjectileInstigator, true);
-		ProjectileInstigator->MoveIgnoreActorAdd(this);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Projectile %s does not have an Instigator."), *GetNameSafe(this));
-	}
-	
-	GetWorldTimerManager().SetTimer(TeleportProjectileTravelTimer, this, &ASTeleportProjectile::EndTeleportTravel, 1.f);
+	UGameplayStatics::SpawnEmitterAtLocation(this, ImpactVFX, GetActorLocation(), GetActorRotation());
+
+	EffectComp->DeactivateSystem();
+
+	MovementComp->StopMovementImmediately();
+	SetActorEnableCollision(false);
+
+	FTimerHandle TimerHandle_DelayedTeleport;
+	GetWorldTimerManager().SetTimer(TimerHandle_DelayedTeleport, this, &ASTeleportProjectile::TeleportInstigator, TeleportDelay);
 }
 
-void ASTeleportProjectile::EndTeleportTravel()
+void ASTeleportProjectile::TeleportInstigator() const
 {
-	OnTeleportProjectileFinishTravel();
-	GetWorldTimerManager().SetTimer(TeleportPlayerTimer, this, &ASTeleportProjectile::TeleportInstigator, 0.5f);
-}
-
-void ASTeleportProjectile::TeleportInstigator()
-{
-	if (APawn* ProjectileInstigator = GetInstigator())
+	AActor* ProjectileInstigator = GetInstigator();
+	if (ensure(ProjectileInstigator))
 	{
-		ProjectileInstigator->TeleportTo(GetActorLocation(), GetActorRotation());
+		ProjectileInstigator->TeleportTo(GetActorLocation(), ProjectileInstigator->GetActorRotation(), false, false);
 	}
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Projectile %s does not have an Instigator. Cant teleport"), *GetNameSafe(this));
 	}
-	
-	Destroy();
 }
-
-// Called every frame
-void ASTeleportProjectile::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-}
-
-// EVENTS
-void ASTeleportProjectile::OnTeleportProjectileFinishTravel_Implementation()
-{}
-

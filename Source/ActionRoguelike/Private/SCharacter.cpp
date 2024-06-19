@@ -37,6 +37,32 @@ void ASCharacter::BeginPlay()
 	
 }
 
+void ASCharacter::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	AttributeComp->OnHealthChanged.AddDynamic(this, &ASCharacter::OnHealthChanged);
+}
+
+// Called to bind functionality to input
+void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+	PlayerInputComponent->BindAxis("MoveForward", this, &ASCharacter::MoveForward);
+	PlayerInputComponent->BindAxis("MoveRight", this, &ASCharacter::MoveRight);
+	
+	PlayerInputComponent->BindAxis("Turn", this, &APawn::AddControllerYawInput);
+	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
+
+	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
+	PlayerInputComponent->BindAction("PrimaryAttack", IE_Pressed, this, &ASCharacter::PrimaryAttack);
+	PlayerInputComponent->BindAction("BlackholeAttack", IE_Pressed, this, &ASCharacter::BlackholeAttack);
+	PlayerInputComponent->BindAction("CastTeleport", IE_Pressed, this, &ASCharacter::CastTeleport);
+	PlayerInputComponent->BindAction("PrimaryInteract", IE_Pressed, this, &ASCharacter::PrimaryInteract);
+	
+}
+
 // Called every frame
 void ASCharacter::Tick(float DeltaTime)
 {
@@ -76,30 +102,37 @@ void ASCharacter::PrimaryInteract()
 
 void ASCharacter::ClassToSpawn(TSubclassOf<AActor>& ActorClass)
 {
+	if (!ensureAlways(ActorClass)) return;
+	
 	const float Distance = 10000.f;
 	FVector SpawnLocation = GetMesh()->GetSocketLocation("Muzzle_01");
+	FVector TraceStart = CameraComp->GetComponentLocation();
 	FVector FinalLocation = CameraComp->GetComponentLocation() + (CameraComp->GetForwardVector() * Distance);
+
+	FCollisionShape Shape;
+	Shape.SetSphere(20.0f);
+
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
 	
 	FCollisionObjectQueryParams ObjectQueryParams;
 	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
 	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn);
 	
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	SpawnParams.Instigator = this;
-
-	FHitResult Hit;
-	bool bBlockingHit = GetWorld()->LineTraceSingleByObjectType(Hit, CameraComp->GetComponentLocation(), FinalLocation, ObjectQueryParams);
 	
+	FHitResult Hit;
+	bool bBlockingHit = GetWorld()->SweepSingleByObjectType(Hit, TraceStart, FinalLocation, FQuat::Identity, ObjectQueryParams, Shape, Params);
+
+	// if it collides with something, use the collided position. If not, use the final position
 	FVector SpawnFinalLocation = bBlockingHit ? Hit.Location : FinalLocation;
 
-	FColor LineColor = bBlockingHit ? FColor::Green : FColor::Red;
-	DrawDebugLine(GetWorld(), SpawnLocation, SpawnFinalLocation, LineColor, false, 2.0f, 0, 2.0f);
-	
 	FTransform SpawmTM = FTransform((SpawnFinalLocation - SpawnLocation).Rotation(), SpawnLocation);
 	GetWorld()->SpawnActor<AActor>(ActorClass, SpawmTM, SpawnParams);
 }
-
 
 void ASCharacter::CastTeleport()
 {
@@ -144,22 +177,13 @@ void ASCharacter::PrimaryAttack_TimeLapsed()
 }
 
 
-// Called to bind functionality to input
-void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+void ASCharacter::OnHealthChanged(AActor* IntigatorActor, USAttributeComponent* OwningComp, float NewHealth,
+	float Delta)
 {
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
-	PlayerInputComponent->BindAxis("MoveForward", this, &ASCharacter::MoveForward);
-	PlayerInputComponent->BindAxis("MoveRight", this, &ASCharacter::MoveRight);
-	
-	PlayerInputComponent->BindAxis("Turn", this, &APawn::AddControllerYawInput);
-	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
-
-	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
-	PlayerInputComponent->BindAction("PrimaryAttack", IE_Pressed, this, &ASCharacter::PrimaryAttack);
-	PlayerInputComponent->BindAction("BlackholeAttack", IE_Pressed, this, &ASCharacter::BlackholeAttack);
-	PlayerInputComponent->BindAction("CastTeleport", IE_Pressed, this, &ASCharacter::CastTeleport);
-	PlayerInputComponent->BindAction("PrimaryInteract", IE_Pressed, this, &ASCharacter::PrimaryInteract);
-	
+	if (NewHealth <= 0.0f && Delta < 0.0f)
+	{
+		APlayerController* PlayerController = Cast<APlayerController>(GetController());
+		DisableInput(PlayerController);
+	}
 }
 

@@ -18,10 +18,16 @@ public:
 	USAttributeComponent();
 
 protected:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attributes")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attributes")
 	float Health;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attributes")
+	float HealthMax;
+
 public:
+	UFUNCTION(BlueprintCallable)
+	bool IsAlive() const;
+	
 	UPROPERTY(BlueprintAssignable)
 	FOnHealthChanged OnHealthChanged;
 	

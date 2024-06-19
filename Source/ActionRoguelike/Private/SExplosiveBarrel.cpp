@@ -85,12 +85,10 @@ void ASExplosiveBarrel::ApplyDamageInArea() const
 	{
 		if (USAttributeComponent* AttributeComp = Hit.GetActor()->GetComponentByClass<USAttributeComponent>())
 		{
-			if (AActor** CachedActor = AffectedActors.FindByKey(Hit.GetActor()))
-			{
-				continue;
-			}
+		    // Don't apply damage if actor was already hit by the explosion
+			if (AActor** CachedActor = AffectedActors.FindByKey(Hit.GetActor())) continue; 
 			
-			AttributeComp->ApplyHealthChange(-30.0f);
+			AttributeComp->ApplyHealthChange(-Damage);
 			AffectedActors.Push(Hit.GetActor());
 		}
 	}
