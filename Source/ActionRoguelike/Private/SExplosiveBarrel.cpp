@@ -63,6 +63,7 @@ void ASExplosiveBarrel::ApplyDamageInArea() const
 {
 	FCollisionObjectQueryParams ObjectQueryParams;
 	ObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn);
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_PhysicsBody);
 
 	FVector ActorLocation = GetActorLocation();
 	

@@ -29,7 +29,7 @@ bool USAttributeComponent::ApplyHealthChange(float Delta)
 	{
 		if (UStaticMeshComponent* MeshComp = Cast<UStaticMeshComponent>(GetOwner()->GetComponentByClass(UStaticMeshComponent::StaticClass())))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Changing health from %s"), *GetNameSafe(GetOwner()))
+			UE_LOG(LogTemp, Warning, TEXT("Changing health from %s by %f"), *GetNameSafe(GetOwner()), Delta)
 			MeshComp->SetScalarParameterValueOnMaterials("TimeToHit", GetWorld()->TimeSeconds);
 			MeshComp->SetScalarParameterValueOnMaterials("HitFlashSpeedMultiplier", 4);
 		}
