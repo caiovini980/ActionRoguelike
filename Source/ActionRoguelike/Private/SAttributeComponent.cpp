@@ -21,23 +21,25 @@ bool USAttributeComponent::ApplyHealthChange(float Delta)
 {
 	Health += Delta;
 
-	// clamp health
-	FMath::Clamp(Health, 0, HealthMax);
-
 	// Hit flash when damaged only
 	if (Delta < 0)
 	{
 		if (UStaticMeshComponent* MeshComp = Cast<UStaticMeshComponent>(GetOwner()->GetComponentByClass(UStaticMeshComponent::StaticClass())))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Changing health from %s by %f"), *GetNameSafe(GetOwner()), Delta)
 			MeshComp->SetScalarParameterValueOnMaterials("TimeToHit", GetWorld()->TimeSeconds);
 			MeshComp->SetScalarParameterValueOnMaterials("HitFlashSpeedMultiplier", 4);
 		}
 	}
-	
-	if (Health == 0)
+
+	// Clamp health values
+	if (Health <= 0)
 	{
+		Health = 0;
 		// owner died
+	}
+	else if (Health >= HealthMax)
+	{
+		Health = HealthMax;
 	}
 
 	OnHealthChanged.Broadcast(nullptr, this, Health, Delta);
