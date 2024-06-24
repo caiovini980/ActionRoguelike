@@ -176,7 +176,7 @@ void ASCharacter::PrimaryAttack_TimeLapsed()
 		
 		if (ensure(PrimaryAttackEffectOnOrigin))
 		{
-			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), PrimaryAttackEffectOnOrigin, SpellSpawnLocation);
+			UGameplayStatics::SpawnEmitterAtLocation(this, PrimaryAttackEffectOnOrigin, SpellSpawnLocation);
 		}
 	}
 }

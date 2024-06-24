@@ -39,6 +39,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
 	UAudioComponent* AudioComp;
 
+	UPROPERTY(EditDefaultsOnly, Category="Effects")
+	TSubclassOf<UCameraShakeBase> CameraShake;
+
 	UPROPERTY(EditDefaultsOnly, Category="Sounds")
 	USoundBase* ImpactSound;
 	
