@@ -8,6 +8,7 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 ASCharacter::ASCharacter()
@@ -60,7 +61,6 @@ void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction("BlackholeAttack", IE_Pressed, this, &ASCharacter::BlackholeAttack);
 	PlayerInputComponent->BindAction("CastTeleport", IE_Pressed, this, &ASCharacter::CastTeleport);
 	PlayerInputComponent->BindAction("PrimaryInteract", IE_Pressed, this, &ASCharacter::PrimaryInteract);
-	
 }
 
 // Called every frame
@@ -105,9 +105,9 @@ void ASCharacter::ClassToSpawn(TSubclassOf<AActor>& ActorClass)
 	if (!ensureAlways(ActorClass)) return;
 	
 	const float Distance = 10000.f;
-	FVector SpawnLocation = GetMesh()->GetSocketLocation("Muzzle_01");
 	FVector TraceStart = CameraComp->GetComponentLocation();
 	FVector FinalLocation = CameraComp->GetComponentLocation() + (CameraComp->GetForwardVector() * Distance);
+	SpellSpawnLocation = GetMesh()->GetSocketLocation("Muzzle_01");
 
 	FCollisionShape Shape;
 	Shape.SetSphere(20.0f);
@@ -130,7 +130,7 @@ void ASCharacter::ClassToSpawn(TSubclassOf<AActor>& ActorClass)
 	// if it collides with something, use the collided position. If not, use the final position
 	FVector SpawnFinalLocation = bBlockingHit ? Hit.Location : FinalLocation;
 
-	FTransform SpawmTM = FTransform((SpawnFinalLocation - SpawnLocation).Rotation(), SpawnLocation);
+	FTransform SpawmTM = FTransform((SpawnFinalLocation - SpellSpawnLocation).Rotation(), SpellSpawnLocation);
 	GetWorld()->SpawnActor<AActor>(ActorClass, SpawmTM, SpawnParams);
 }
 
@@ -173,6 +173,11 @@ void ASCharacter::PrimaryAttack_TimeLapsed()
 	if (ensure(ProjectileClass))
 	{
 		ClassToSpawn(ProjectileClass);
+		
+		if (ensure(PrimaryAttackEffectOnOrigin))
+		{
+			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), PrimaryAttackEffectOnOrigin, SpellSpawnLocation);
+		}
 	}
 }
 

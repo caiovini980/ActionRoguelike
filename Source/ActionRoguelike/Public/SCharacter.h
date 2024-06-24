@@ -10,6 +10,7 @@ class UCameraComponent;
 class USpringArmComponent;
 class USInteractionComponent;
 class USAttributeComponent;
+class UParticleSystem;
 class UAnimMontage;
 
 UCLASS()
@@ -52,8 +53,12 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Attributes")
 	USAttributeComponent* AttributeComp;
-	
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Effects")
+	UParticleSystem* PrimaryAttackEffectOnOrigin;
+
+	FVector SpellSpawnLocation;
+	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	virtual void PostInitializeComponents() override;
